@@ -1,0 +1,46 @@
+name: Build
+on: [push]
+jobs:
+  build:
+    runs-on: macOS-latest
+    env:
+        MATCH_REPO: ${{ secrets.MATCH_REPO }}
+        MATCH_AUTH: ${{ secrets.MATCH_AUTH }}
+        MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+        TEAM_ID: ${{ secrets.TEAM_ID }}
+        ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+        BUNDLE_ID: ${{ secrets.BUNDLE_ID }}
+        SCHEME: ${{ secrets.SCHEME }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.REPO }}
+        token: ${{ secrets.REPO_PAT }}
+        path: ci
+
+    - name: Update Gems
+      working-directory: ci
+      run: bundle update
+
+    - name: Install Pods
+      working-directory: ci
+      run: pod install > /dev/null
+
+    - name: Run fastlane cer
+      working-directory: ci
+      timeout-minutes: 3
+      run:  fastlane cer > /dev/null
+
+    - name: Run fastlane achieve
+      working-directory: ci
+      timeout-minutes: 10
+      run: fastlane achieve > /dev/null
+
+    - name: Clean
+      working-directory: ci
+      if: always()
+      run: |
+        fastlane delete > /dev/null
+        rm -rf *
